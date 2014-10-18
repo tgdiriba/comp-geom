@@ -67,8 +67,8 @@ class Segment {
   }
 
   public Segment(Point p1, Point p2) {
-    this.p1 = p1;
-    this.p2 = p2;
+    this.p1 = new Point(p1.x, p1.y);
+    this.p2 = new Point(p2.x, p2.y);
   }
 
   public void sortPointsX() {
@@ -157,6 +157,24 @@ class ConvexHull {
   
   public int determinant(Point p1, Point p2, Point p3) {
     return (p1.x*p2.y + p1.y*p3.x + p2.x*p3.y) - (p1.x*p3.y + p1.y*p2.x + p2.y*p3.x);
+  }
+  
+  public void drawHull(PApplet app) {
+    // Generate line segments
+    ArrayList<Segment> segments = new ArrayList<Segment>();
+    Point previous = (hull.size() > 0) ? hull.get(0) : null;
+    for(int i = 1; i < hull.size(); i++) {
+      segments.add(new Segment(previous, hull.get(i))); 
+      previous = hull.get(i);
+    }
+    if(hull.size() > 0) {
+      segments.add(new Segment(hull.get(0), hull.get(hull.size()-1)));  
+    }
+    
+    // Draw line segments
+    for(Segment s : segments) {
+      s.drawLine(app);  
+    }
   }
   
   public void computeConvexHull() {
@@ -260,15 +278,7 @@ class GeomCanvas extends Canvas {
     alp.add(new Point(550,300));
     ch.points = alp; 
     ch.computeConvexHull();
-    // Displaying Convex Hull
-    Point previous = (ch.hull.size() > 0) ? ch.hull.get(0) : null;
-    for(int i = 1; i < ch.hull.size(); i++) {
-      app.line(previous.x, previous.y, ch.hull.get(i).x, ch.hull.get(i).y);
-      previous = ch.hull.get(i);
-    }
-    if(ch.hull.size() > 0) {
-      app.line(ch.hull.get(0).x, ch.hull.get(0).y, ch.hull.get(ch.hull.size()-1).x, ch.hull.get(ch.hull.size()-1).y);  
-    }
+    ch.drawHull(app);
   }
 
   public void draw(PApplet app) {
