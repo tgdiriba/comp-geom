@@ -22,7 +22,7 @@ public Comparator<Point> xPointCompare = new Comparator<Point>() {
   }
 };
   
-public static Comparator<Point> yPointCompare = new Comparator<Point>() {
+public Comparator<Point> yPointCompare = new Comparator<Point>() {
   public int compare(Point p1, Point p2) {
     if(p1.y != p2.y) {
       return p1.y - p2.y;
