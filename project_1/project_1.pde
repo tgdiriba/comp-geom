@@ -1,4 +1,5 @@
 import java.util.*;
+import javax.swing.*;
 import java.io.File;
 
 int POLYGON_FILL = 0;
@@ -6,6 +7,9 @@ int POLYGON_UNION = 1;
 int CONVEX_HULL = 2;
 int EXTRA_CREDIT = 3;
 int INVALID = -1;
+
+int DEFAULT_MODE = 100;
+int INPUT_MODE = 101;
 
 void ColorPixel(int x, int y, color c) {
   int pixelIndex = y*width+x;
@@ -174,8 +178,8 @@ class Segment {
   }
   
   public Segment(Point p1, Point p2) {
-    this.p1 = p1;
-    this.p2 = p2;
+    this.p1 = new Point(p1.x, p1.y);
+    this.p2 = new Point(p2.x, p2.y);
     pColor = color(0,0,0);  
   }
 
@@ -440,9 +444,19 @@ class ConvexHull {
       if(topPoints.size() > 0) {
         for(Point p : topPoints) {
           topHull.add(p);
+          double det = 0;
+          if(topHull.size() > 2) {
+            det = determinant(topHull.get(topHull.size()-3),
+                                                  topHull.get(topHull.size()-2),
+                                                  topHull.get(topHull.size()-1));
+            if(det < 0) {
+              //println(det);
+            }  
+          }
           while(topHull.size() > 2 && determinant(topHull.get(topHull.size()-3),
                                                   topHull.get(topHull.size()-2),
                                                   topHull.get(topHull.size()-1)) >= 0) {
+            
             topHull.remove(topHull.size()-2);                                                     
           }
         } 
@@ -453,6 +467,15 @@ class ConvexHull {
       if(bottomPoints.size() > 0) {
         for(int i = bottomPoints.size()-1; i >= 0; i--) {
           bottomHull.add(bottomPoints.get(i));
+          double det = 0;
+          if(topHull.size() > 2) {
+            det = determinant(topHull.get(topHull.size()-3),
+                                                  topHull.get(topHull.size()-2),
+                                                  topHull.get(topHull.size()-1));
+            if(det < 0) {
+              //println(det);
+            }  
+          }
           while(bottomHull.size() > 2 && determinant(bottomHull.get(bottomHull.size()-3),
                                                      bottomHull.get(bottomHull.size()-2),
                                                      bottomHull.get(bottomHull.size()-1)) >= 0) {
@@ -547,30 +570,77 @@ class Parser {
   
   public String filename;
   public int currentTask;
+  public int mode;
   ArrayList<Task> tasks;
   
   public Parser() {
     tasks = new ArrayList<Task>();
     currentTask = INVALID;
-    // System.out.print("Please input the path of the input file: ");
-    // Scanner consoleReader = new Scanner(System.in);
+    mode = DEFAULT_MODE;
+    String defaultFilename = "/home/nurc-08/sketchbook/project_1/project_java/input.txt"; 
+    
     File inputFile = null;
     Scanner fileReader = null;
-    while(inputFile == null) {
+    if(mode == INPUT_MODE) {
+      boolean fileSelected = false;
+      while(!fileSelected) {
+        Object option = JOptionPane.showInputDialog(null, "Type the name of the file or hit cancel to use the file browser", "Configuration", JOptionPane.PLAIN_MESSAGE, null, null,"");
+        if(option == null) {
+          JFileChooser chooser = new JFileChooser();
+          int choice = chooser.showOpenDialog(null);
+          if (choice == JFileChooser.APPROVE_OPTION) {
+            File chosenFile = chooser.getSelectedFile();
+            fileSelected = true;
+          }
+          else {
+            int useDefaultFile = JOptionPane.showConfirmDialog(null, "Use the default file?", "Configuration", JOptionPane.YES_NO_OPTION);   
+            if(useDefaultFile == JOptionPane.YES_OPTION) {
+              try {
+                filename = defaultFilename;
+                inputFile = new File(filename);
+                fileReader = new Scanner(inputFile);
+                fileSelected = true; 
+              }
+              catch(Exception e) {
+                  int exitOption = JOptionPane.showConfirmDialog(null, defaultFilename, "Bad Default", JOptionPane.YES_NO_OPTION); 
+                  if(exitOption == JOptionPane.YES_OPTION) {
+                    System.exit(1);
+                  }
+                  else {
+                    fileSelected = false;  
+                  }
+              }
+            }
+          }
+        }
+        else {
+          try {
+           filename = (String)option; 
+           inputFile = new File(filename);
+           fileReader = new Scanner(inputFile);
+           fileSelected = true;
+          }
+          catch(Exception e) {
+            JOptionPane.showMessageDialog(null, "Invalid filename. Please try again.");
+          }
+        }
+      }
+    }
+    else {
       try {
-       filename = "/home/nurc-08/sketchbook/project_1/project_java/input.txt";//consoleReader.nextLine(); 
-       inputFile = new File(filename);
-       fileReader = new Scanner(inputFile);
+        filename = defaultFilename;
+        inputFile = new File(filename);
+        fileReader = new Scanner(inputFile);
       }
       catch(Exception e) {
-        System.out.println("Invalid input please input another filename: ");
+        JOptionPane.showMessageDialog(null, "Could not open default file."); 
       }
     }
     
     String line;
     int polygonSelect = 1;
     Task taskBuffer = new PolygonTask();
-    while(fileReader.hasNextLine()) {
+    while(fileReader != null && fileReader.hasNextLine()) {
       line = fileReader.nextLine().trim().toUpperCase();
       if(line.equals("P")) { 
         currentTask = POLYGON_FILL;
@@ -687,8 +757,9 @@ void setup() {
   updatePixels();
   Parser taskParser = new Parser();
   
+  
+  
   for(int i = 0; i < taskParser.tasks.size(); i++) {
     taskParser.tasks.get(i).performTask();
-      
   }
 }
