@@ -1045,9 +1045,10 @@ void setup() {
   clearScreen();
 
   Parser taskParser = new Parser();
-  println(taskParser.size());
+  println(taskParser.tasks.size());
   for (int i = 0; i < taskParser.tasks.size (); i++) {
-    //taskParser.tasks.get(i).performTask();
-    //JOptionPane.showConfirmDialog(null, "Continue?", "Next Task", JOptionPane.YES_NO_OPTION); 
+    taskParser.tasks.get(i).performTask();
+    //JOptionPane.showConfirmDialog(null, "Continue?", "Next Task", JOptionPane.YES_NO_OPTION);
+   //delay(1000); 
   }
 }
