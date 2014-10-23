@@ -17,6 +17,13 @@ void ColorPixel(int x, int y, color c) {
   updatePixels();
 }
 
+void clearScreen() {
+  for(int i = 0; i < width*height; i++) {
+    pixels[i] = color(255,255,255);
+  }  
+  updatePixels();
+}
+
 boolean AreColorsSame(color c1, color c2) {
   if ((red(c1)==red(c2))&&(green(c1)==green(c2))&&(blue(c1)==blue(c2))) {
     return true;
@@ -447,7 +454,7 @@ class Polygon {
   public ArrayList<Segment> generateLineSegments(color polygonColor) {
     borderColor = polygonColor;
     segments = new ArrayList<Segment>();
-    for (int i = 1; i < vertices.size (); i++) {
+    for (int i = 1; i < vertices.size(); i++) {
       segments.add(new Segment(vertices.get(i-1), vertices.get(i), polygonColor));
     }
     if (vertices.size() > 0) {
@@ -490,6 +497,15 @@ class Polygon {
       color currentColor = get(meanx, meany);
       FloodFill(meanx, meany, currentColor, polygonColor);
     }
+  }
+  
+  String toString() {
+    String conversion = "Polygon :\n";
+    for(Point p : vertices) {
+      conversion += "\t" + p + "\n";
+    }  
+    conversion += "\n";
+    return conversion;
   }
   
 }
@@ -852,10 +868,13 @@ class PolygonTask implements Task {
   }
 
   public void performTask() {
-    fill(255, 255, 255);
+    clearScreen();
     println("Performing Polygon Task.");
+    for(Point p : polygon.vertices) {
+      println(p);  
+    }
     polygon.drawPolygon();
-    polygon.colorPolygon(color(255, 0, 0));
+    polygon.colorPolygon(color(255, 102, 204));
   }
 }
 
@@ -870,26 +889,11 @@ class PolygonUnionTask implements Task {
   }
 
   public void performTask() {
+    clearScreen();
     // Given two convex polygons finds the union polygon and colors it in.
-    fill(255, 255, 255);
-    println("Performing Polygon Union Task.");
-    polygon1.generateLineSegments();
-    polygon2.generateLineSegments();
-
-    ArrayList<Intersection> intersections = new ArrayList<Intersection>();
-    for (Segment seg1 : polygon1.segments) {
-      for (Segment seg2 : polygon2.segments) {
-        if (seg1.intersects(seg2)) {
-          Point intersect = IntersectionFinder(seg1, seg2);
-          Intersection intersection = new Intersection(intersect, seg1, seg2);
-          intersections.add(intersection);
-        }
-      }
-    }
-
-    // TODO:
-    // What is left is to traverse a polygon and check at each vertex if one needs to switch polygons
-    // All the while draw the valid segments and any intermediate segments due to intersection points
+    polygon1.drawPolygon();
+    polygon2.drawPolygon();
+    DrawUnion(polygon1,polygon2,color(0,0,0),color(255,102,204));
   }
 }
 
@@ -902,7 +906,7 @@ class ConvexHullTask implements Task {
   }
 
   public void performTask() {
-    fill(255, 255, 255);
+    clearScreen();
     println("Performing Convex Hull Task.");
     H.computeConvexHull();
     H.drawHull();
@@ -920,14 +924,14 @@ class Parser {
     tasks = new ArrayList<Task>();
     currentTask = INVALID;
     mode = DEFAULT_MODE;
-    String defaultFilename = "/home/nurc-08/sketchbook/project_1/project_java/input.txt"; 
+    String defaultFilename = "/home/nurc-08/sketchbook/shared-repo/project_1/input.txt"; 
 
     File inputFile = null;
     Scanner fileReader = null;
     if (mode == INPUT_MODE) {
       boolean fileSelected = false;
       while (!fileSelected) {
-        Object option = JOptionPane.showInputDialog(null, "Type the name of the file or hit cancel to use the file browser", "Configuration", JOptionPane.PLAIN_MESSAGE, null, null, "");
+        Object option = JOptionPane.showInputDialog(null, "Type the full path of the file or hit cancel to use the file browser", "Configuration", JOptionPane.PLAIN_MESSAGE, null, null, "");
         if (option == null) {
           JFileChooser chooser = new JFileChooser();
           int choice = chooser.showOpenDialog(null);
@@ -982,14 +986,17 @@ class Parser {
     while (fileReader != null && fileReader.hasNextLine ()) {
       line = fileReader.nextLine().trim().toUpperCase();
       if (line.equals("P")) { 
+        println("POLYGON TASK");
         currentTask = POLYGON_FILL;
         taskBuffer = new PolygonTask();
         tasks.add(taskBuffer);
       } else if (line.equals("U, P1, P2")) {  
+        println("UNION TASK");
         currentTask = POLYGON_UNION;
         taskBuffer = new PolygonUnionTask();
         tasks.add(taskBuffer);
-      } else if (line.equals("H, S")) {  
+      } else if (line.equals("H, S")) { 
+        println("CONVEX HULL TASK"); 
         currentTask = CONVEX_HULL;
         taskBuffer = new ConvexHullTask();
         tasks.add(taskBuffer);
@@ -1013,6 +1020,7 @@ class Parser {
 
           if (currentTask == POLYGON_FILL) {
             ((PolygonTask)taskBuffer).polygon.vertices.add(p);
+            println("Adding polygon");
           } else if (currentTask == POLYGON_UNION) {
             if (polygonSelect == 1) {
               ((PolygonUnionTask)taskBuffer).polygon1.vertices.add(p);
@@ -1034,119 +1042,12 @@ class Parser {
 void setup() {
   size(600, 600);
   loadPixels();
-  color pink = color(255, 102, 204);
-  color black = color(0, 0, 0);
-  
-  /*geom_controller = new ControlP5(this);
-   canv = new GeomCanvas();
-   geom_controller.addCanvas(canv);*/
-  /*fill(color(255, 255, 255));
-   frameRate(30);
-   
-   Point s1p1 = new Point(50,50);
-   Point s1p2 = new Point(80,140);
-   Segment s1 = new Segment(s1p1,s1p2,black);
-   Point s2p1 = new Point(40,70);
-   Point s2p2 = new Point(90,70);
-   Segment s2 = new Segment(s2p1,s2p2,black);
-   s1.drawLine();
-   s2.drawLine();
-   
-   Point intersect = IntersectionFinder(s1,s2);
-   if (intersect != null) {
-   ColorPixel(intersect.x,intersect.y,pink);
-   println("Intersection Fojava file close
-   und.");
-   }
-   
-   // Bresenham line-drawing Test Code
-   // Test line: Generates two random coordinates and drawes a line between them
-   Random rg = new Random();
-   int tx1 = rg.nextInt(width);
-   int ty1 = rg.nextInt(height);
-   int tx2 = rg.nextInt(width);
-   int ty2 = rg.nextInt(height);
-   Point tp1 = new Point(tx1, ty1);
-   Point tp2 = new Point(tx2, ty2);
-   Segment s = new Segment(tp1, tp2);
-   s.drawLine();
-   
-   // Convex Hull Test Code
-   ConvexHull ch = new ConvexHull();
-   ArrayList<Point> alp = new ArrayList();
-   for(int i = 0; i < 100; i++) {
-   int x = rg.nextInt(350)+150;
-   int y = rg.nextInt(350)+150;
-   Point pi = new Point(x,y);
-   while(alp.contains(pi)) {
-   x = rg.nextInt(350)+150;
-   y = rg.nextInt(350)+150;
-   pi = new Point(x,y);
-   }
-   set(x, y, 0);
-   alp.add(pi);  
-   }
-   ch.points = alp; 
-   ch.computeConvexHull();
-   ch.drawHull();*/
+  clearScreen();
 
   Parser taskParser = new Parser();
-
-  // Line intersection tests
-  /*Segment seg1 = new Segment(new Point(100, 100), new Point(100, 500));
-  Segment seg2 = new Segment(new Point(50, 300), new Point(500, 300));
-  seg1.drawLine();
-  seg2.drawLine();
-  println(seg1.intersects(seg2)); 
-  println(seg1.bresenhamIntersection(seg2));
-  
-  // Polygon Clipping Test
-  Polygon ptest = new Polygon();
-  ptest.vertices.add(new Point(100, 100));
-  ptest.vertices.add(new Point(300, 100));
-  ptest.vertices.add(new Point(300, 300));
-  ptest.vertices.add(new Point(100, 300));
-  Segment clipper = new Segment(new Point(200, 0), new Point(200, 250));
-  ptest.drawPolygon(black);
-  Segment C = ptest.getClippedLineSegment(clipper);
-  C.drawLine();
-  println(C);*/
-  
-  /*ArrayList<Point> poly = new ArrayList();
-  poly.add(new Point(50,30));
-  poly.add(new Point(60,100));
-  poly.add(new Point(430,100));
-  poly.add(new Point(435,50));
-  Polygon pol = new Polygon(poly,black);
-  pol.drawPolygon();
-  
-  ArrayList<Point> poly2 = new ArrayList();
-  poly2.add(new Point(200,10));
-  poly2.add(new Point(150,10));
-  poly2.add(new Point(140,200));
-  Polygon pol2 = new Polygon(poly2,black);
-  pol2.drawPolygon();
-  
-  ArrayList<Point> poly3 = new ArrayList();
-  poly3.add(new Point(360, 500));
-  poly3.add(new Point(280, 50));
-  poly3.add(new Point(240, 490));
-  Polygon pol3 = new Polygon(poly3,black);
-  pol3.drawPolygon();*/
-  
-  ArrayList<Point> poly4 = new ArrayList();
-  //CHECK THIS POINT LATER
-  //poly4.add(new Point(400,200));
-  poly4.add(new Point(450,200));
-  poly4.add(new Point(300,200));
-  poly4.add(new Point(200,50));
-  poly4.add(new Point(210, 300));
-  Polygon pol4 = new Polygon(poly4,black);
-  pol4.drawPolygon();
-  //DrawUnion(pol2,pol3,black, pink);
-  
+  println(taskParser.size());
   for (int i = 0; i < taskParser.tasks.size (); i++) {
-    taskParser.tasks.get(i).performTask();
-    updatePixels();
+    //taskParser.tasks.get(i).performTask();
+    //JOptionPane.showConfirmDialog(null, "Continue?", "Next Task", JOptionPane.YES_NO_OPTION); 
   }
 }
