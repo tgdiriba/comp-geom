@@ -1045,6 +1045,11 @@ class Parser {
   }
 }
 
+void wait(int ms) {
+  int current = millis();
+  while(millis() < current + ms);  
+}
+
 void setup() {
   size(600, 600);
   loadPixels();
@@ -1056,6 +1061,7 @@ void setup() {
   println(taskParser.tasks.size());
   for (int i = 0; i < taskParser.tasks.size (); i++) {
     taskParser.tasks.get(i).performTask();
+    wait(5000);
     //JOptionPane.showConfirmDialog(null, "Continue?", "Next Task", JOptionPane.YES_NO_OPTION);
     //delay(1000); 
   }
