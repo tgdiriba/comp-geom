@@ -359,8 +359,9 @@ class Segment {
         }
       }
     } else if (dx == 0) {
-      sortPointsY();
-      for (int i = p1.y; i < p2.y; i++) {
+      int start = Math.min(p1.y, p2.y);
+      int end = Math.max(p1.y, p2.y);
+      for (int i = start; i < end; i++) {
         set(p1.x, i, 0);
       }
     } else if (dy == 0) {
@@ -642,6 +643,8 @@ class ConvexHull {
 }
 
 void DrawUnion(Polygon poly1, Polygon poly2, color borderColor, color fillColor) {
+  poly1.generateLineSegments();
+  poly2.generateLineSegments();
   //Find the all the intersection points between the two polygons
   ArrayList<Point> intersects = new ArrayList();
   for(Segment s1 : poly1.segments) {
@@ -857,7 +860,7 @@ void DrawUnion(Polygon poly1, Polygon poly2, color borderColor, color fillColor)
       count++;
     } while ( ((startPoint.x!=currentPoint.x) || (startPoint.y!=currentPoint.y)) && (count<1));
   }
-  //poly1.colorPolygon(fillColor);
+  poly1.colorPolygon(fillColor);
 }
 
 interface Task {
@@ -896,8 +899,6 @@ class PolygonUnionTask implements Task {
   public void performTask() {
     clearScreen();
     // Given two convex polygons finds the union polygon and colors it in.
-    polygon1.drawPolygon();
-    polygon2.drawPolygon();
     DrawUnion(polygon1,polygon2,color(0,0,0),color(255,102,204));
   }
 }
@@ -1090,11 +1091,6 @@ class Parser {
       fileReader.close();
     }
   }
-}
-
-void wait(int ms) {
-  int current = millis();
-  while(millis() < current + ms);  
 }
 
 void setup() {
