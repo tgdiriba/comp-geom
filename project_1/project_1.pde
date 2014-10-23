@@ -299,7 +299,7 @@ class Segment {
       if (p2.y < p1.y) {
         Point temp = p1;
         p1 = p2;
-        p2 = p1;
+        p2 = temp;
       }
     }
   }
@@ -313,7 +313,7 @@ class Segment {
       if (p2.x < p1.x) {
         Point temp = p1;
         p1 = p2;
-        p2 = p1;
+        p2 = temp;
       }
     }
   }
@@ -359,9 +359,8 @@ class Segment {
         }
       }
     } else if (dx == 0) {
-      int start = Math.min(p1.y, p2.y);
-      int end = Math.max(p1.y, p2.y);
-      for (int i = start; i < end; i++) {
+      sortPointsY();
+      for (int i = p1.y; i < p2.y; i++) {
         set(p1.x, i, 0);
       }
     } else if (dy == 0) {
@@ -1114,6 +1113,7 @@ void draw() {
         }  
         else {
           continuation = false;
+          COMPLETE = true;
         }
       }
     }
