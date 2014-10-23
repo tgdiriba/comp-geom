@@ -923,7 +923,7 @@ class Parser {
   public Parser() {
     tasks = new ArrayList<Task>();
     currentTask = INVALID;
-    mode = DEFAULT_MODE;
+    mode = INPUT_MODE;
     String defaultFilename = "/home/nurc-08/sketchbook/shared-repo/project_1/input.txt"; 
 
     File inputFile = null;
@@ -937,6 +937,12 @@ class Parser {
           int choice = chooser.showOpenDialog(null);
           if (choice == JFileChooser.APPROVE_OPTION) {
             File chosenFile = chooser.getSelectedFile();
+            try {
+              fileReader = new Scanner(chosenFile);
+            }
+            catch(Exception e) {
+              println("File was not found");  
+            }
             fileSelected = true;
           } else {
             int useDefaultFile = JOptionPane.showConfirmDialog(null, "Use the default file?", "Configuration", JOptionPane.YES_NO_OPTION);   
@@ -1042,13 +1048,16 @@ class Parser {
 void setup() {
   size(600, 600);
   loadPixels();
+  frameRate(30);
   clearScreen();
+  background(255, 255, 255);
 
   Parser taskParser = new Parser();
   println(taskParser.tasks.size());
   for (int i = 0; i < taskParser.tasks.size (); i++) {
     taskParser.tasks.get(i).performTask();
     //JOptionPane.showConfirmDialog(null, "Continue?", "Next Task", JOptionPane.YES_NO_OPTION);
-   //delay(1000); 
+    //delay(1000); 
   }
+  
 }
