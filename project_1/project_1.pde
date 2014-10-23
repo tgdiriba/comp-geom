@@ -656,7 +656,7 @@ void DrawUnion(Polygon poly1, Polygon poly2, color borderColor, color fillColor)
       }
     }
   }
-  print("Allintersection points: ",intersects,"\n");
+  print("All intersection points: ",intersects,"\n");
   if (intersects.isEmpty()) {
     print("polygons do not intersect. No union found.\n");
     return;
@@ -1101,26 +1101,20 @@ void setup() {
 }
 
 void draw() {
+  boolean continuation = false;
   if(!COMPLETE) {
     if(taskIndex < taskParser.tasks.size()) {
-      taskParser.tasks.get(taskIndex).performTask();
-      if(taskIndex != 0) {
-        int c = JOptionPane.showConfirmDialog(null, "Continue?", "Next Task", JOptionPane.YES_NO_OPTION);
-        if(c != JOptionPane.YES_OPTION) {
-          COMPLETE = true;
-          taskIndex = 0;
-          int done = JOptionPane.showConfirmDialog(null, "Do you want to run another file?", "Complete", JOptionPane.YES_NO_OPTION);
-          if(done != JOptionPane.YES_OPTION)
-            COMPLETE = true;
-          else
-            taskParser = new Parser();
-        }
-        else {
-          taskIndex++;  
-        }
+      if(taskIndex == 0) {
+        continuation = true;
       }
       else {
-        taskIndex++;  
+        int c = JOptionPane.showConfirmDialog(null, "Continue?", "Next Task", JOptionPane.YES_NO_OPTION);
+        if(c == JOptionPane.YES_OPTION) {
+          continuation = true;
+        }  
+        else {
+          continuation = false;
+        }
       }
     }
     else {
@@ -1130,6 +1124,11 @@ void draw() {
         COMPLETE = true;
       else
         taskParser = new Parser();
+    }
+    if(continuation) {
+      clearScreen();
+      taskParser.tasks.get(taskIndex).performTask();
+      taskIndex++;  
     }
   } 
 }
