@@ -915,6 +915,26 @@ class ConvexHullTask implements Task {
   }
 }
 
+class SegmentClippingTask implements Task {
+  
+  Polygon polygon;
+  Segment segment;
+  
+  public SegmentClippingTask() {
+    polygon = new Polygon();
+    segment = new Segment();  
+  }
+  
+  public void performTask() {
+    polygon.drawPolygon();
+    Segment clippedLineSegment = polygon.getClippedLineSegment(segment);
+    if(clippedLineSegment != null) {
+      clippedLineSegment.drawLine();  
+    }
+  }
+    
+}
+
 class Parser {
 
   public String filename;
@@ -993,29 +1013,35 @@ class Parser {
 
     String line;
     int polygonSelect = 1;
+    int clippingSelect = 0;
     Task taskBuffer = new PolygonTask();
     while (fileReader != null && fileReader.hasNextLine ()) {
       line = fileReader.nextLine().trim().toUpperCase();
       if (line.equals("P")) { 
-        println("POLYGON TASK");
         currentTask = POLYGON_FILL;
         taskBuffer = new PolygonTask();
         tasks.add(taskBuffer);
-      } else if (line.equals("U, P1, P2")) {  
-        println("UNION TASK");
+      } else if (line.equals("U, P1, P2")) {
         currentTask = POLYGON_UNION;
         taskBuffer = new PolygonUnionTask();
+        polygonSelect = 1;
         tasks.add(taskBuffer);
       } else if (line.equals("H, S")) { 
-        println("CONVEX HULL TASK"); 
         currentTask = CONVEX_HULL;
         taskBuffer = new ConvexHullTask();
+        tasks.add(taskBuffer);
+      } else if(line.equals("P, S")) { 
+        currentTask = EXTRA_CREDIT;
+        taskBuffer = new SegmentClippingTask();
+        clippingSelect = 0;
         tasks.add(taskBuffer);
       } else if (currentTask != INVALID) {
         if (line.equals("P1")) {
           polygonSelect = 1;
         } else if (line.equals("P2")) {
           polygonSelect = 2;
+        } else if(line.equals("POL")) {
+          clippingSelect = 1;
         } else {
           // Parse the points using the split function
           String[] strValues = line.split(" ");
@@ -1040,6 +1066,19 @@ class Parser {
             }
           } else if (currentTask == CONVEX_HULL) {
             ((ConvexHullTask)taskBuffer).H.points.add(p);
+          } else if(currentTask == EXTRA_CREDIT) {
+            if(clippingSelect == 0) {
+              ((SegmentClippingTask)taskBuffer).polygon.vertices.add(p);
+              clippingSelect++;
+            }
+            else {
+              if(((SegmentClippingTask)taskBuffer).segment.p1 == null) {
+                ((SegmentClippingTask)taskBuffer).segment.p1 = p;
+              }
+              else if(((SegmentClippingTask)taskBuffer).segment.p2 == null) {
+                ((SegmentClippingTask)taskBuffer).segment.p2 = p;
+              }
+            }
           }
         }
       }
