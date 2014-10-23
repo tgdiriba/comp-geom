@@ -34,4 +34,4 @@ Where the P, C indicates that this is a test case for line clipping while POL st
 
 Bug Considerations
 ---
-There are some issues with drawing vertical lines and tight polygon bounds resulting in polygons being open when they should be closed.
+There are some issues with drawing tight polygon bounds resulting in polygons being open when they should be closed. This may cause problems with the flood fill algorithm.
