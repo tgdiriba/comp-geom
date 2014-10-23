@@ -949,7 +949,7 @@ class Parser {
     tasks = new ArrayList<Task>();
     currentTask = INVALID;
     mode = INPUT_MODE;
-    String defaultFilename = "/home/nurc-08/sketchbook/shared-repo/project_1/input.txt"; 
+    String defaultFilename = sketchPath("") + "input.txt"; 
 
     File inputFile = null;
     Scanner fileReader = null;
