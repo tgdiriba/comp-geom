@@ -11,6 +11,8 @@ int INVALID = -1;
 int DEFAULT_MODE = 100;
 int INPUT_MODE = 101;
 
+boolean COMPLETE = false;
+
 void ColorPixel(int x, int y, color c) {
   int pixelIndex = y*width+x;
   pixels[pixelIndex] = c;
@@ -962,6 +964,9 @@ class Parser {
                 }
               }
             }
+            else {
+              System.exit(0);  
+            }
           }
         } else {
           try {
@@ -1053,17 +1058,22 @@ void wait(int ms) {
 void setup() {
   size(600, 600);
   loadPixels();
-  frameRate(30);
   clearScreen();
   background(255, 255, 255);
+}
 
-  Parser taskParser = new Parser();
-  println(taskParser.tasks.size());
-  for (int i = 0; i < taskParser.tasks.size (); i++) {
-    taskParser.tasks.get(i).performTask();
-    wait(5000);
-    //JOptionPane.showConfirmDialog(null, "Continue?", "Next Task", JOptionPane.YES_NO_OPTION);
-    //delay(1000); 
+void draw() {
+  if(!COMPLETE) {
+    Parser taskParser = new Parser();
+    println(taskParser.tasks.size());
+    for (int i = 0; i < taskParser.tasks.size (); i++) {
+      taskParser.tasks.get(i).performTask();
+      //wait(5000);
+      JOptionPane.showConfirmDialog(null, "Continue?", "Next Task", JOptionPane.YES_NO_OPTION);
+      //delay(1000); 
+    }
+    int done = JOptionPane.showConfirmDialog(null, "Do you want to run another file?", "Complete", JOptionPane.YES_NO_OPTION);
+    if(done != JOptionPane.YES_OPTION)
+      COMPLETE = true;
   }
-  
 }
