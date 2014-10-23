@@ -1017,6 +1017,7 @@ class Parser {
     String line;
     int polygonSelect = 1;
     int clippingSelect = 0;
+    boolean firstPoint = true;
     Task taskBuffer = new PolygonTask();
     while (fileReader != null && fileReader.hasNextLine ()) {
       line = fileReader.nextLine().trim().toUpperCase();
@@ -1044,7 +1045,10 @@ class Parser {
         } else if (line.equals("P2")) {
           polygonSelect = 2;
         } else if(line.equals("POL")) {
+          clippingSelect = 0;
+        } else if(line.equals("S")) {
           clippingSelect = 1;
+          firstPoint = true;
         } else {
           // Parse the points using the split function
           String[] strValues = line.split(" ");
@@ -1072,14 +1076,15 @@ class Parser {
           } else if(currentTask == EXTRA_CREDIT) {
             if(clippingSelect == 0) {
               ((SegmentClippingTask)taskBuffer).polygon.vertices.add(p);
-              clippingSelect++;
             }
             else {
-              if(((SegmentClippingTask)taskBuffer).segment.p1 == null) {
+              if(firstPoint) {
                 ((SegmentClippingTask)taskBuffer).segment.p1 = p;
+                firstPoint = false;
               }
-              else if(((SegmentClippingTask)taskBuffer).segment.p2 == null) {
+              else {
                 ((SegmentClippingTask)taskBuffer).segment.p2 = p;
+                firstPoint = true;
               }
             }
           }
