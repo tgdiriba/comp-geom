@@ -13,6 +13,9 @@ int INPUT_MODE = 101;
 
 boolean COMPLETE = false;
 
+Parser taskParser;
+int taskIndex = 0;
+
 void ColorPixel(int x, int y, color c) {
   int pixelIndex = y*width+x;
   pixels[pixelIndex] = c;
@@ -1098,21 +1101,39 @@ void setup() {
   size(600, 600);
   loadPixels();
   clearScreen();
-  background(255, 255, 255);
+  taskParser = new Parser();
 }
 
 void draw() {
   if(!COMPLETE) {
-    Parser taskParser = new Parser();
-    println(taskParser.tasks.size());
-    for (int i = 0; i < taskParser.tasks.size (); i++) {
-      taskParser.tasks.get(i).performTask();
-      //wait(5000);
-      JOptionPane.showConfirmDialog(null, "Continue?", "Next Task", JOptionPane.YES_NO_OPTION);
-      //delay(1000); 
+    if(taskIndex < taskParser.tasks.size()) {
+      taskParser.tasks.get(taskIndex).performTask();
+      if(taskIndex != 0) {
+        int c = JOptionPane.showConfirmDialog(null, "Continue?", "Next Task", JOptionPane.YES_NO_OPTION);
+        if(c != JOptionPane.YES_OPTION) {
+          COMPLETE = true;
+          taskIndex = 0;
+          int done = JOptionPane.showConfirmDialog(null, "Do you want to run another file?", "Complete", JOptionPane.YES_NO_OPTION);
+          if(done != JOptionPane.YES_OPTION)
+            COMPLETE = true;
+          else
+            taskParser = new Parser();
+        }
+        else {
+          taskIndex++;  
+        }
+      }
+      else {
+        taskIndex++;  
+      }
     }
-    int done = JOptionPane.showConfirmDialog(null, "Do you want to run another file?", "Complete", JOptionPane.YES_NO_OPTION);
-    if(done != JOptionPane.YES_OPTION)
-      COMPLETE = true;
-  }
+    else {
+      int done = JOptionPane.showConfirmDialog(null, "Do you want to run another file?", "Complete", JOptionPane.YES_NO_OPTION);
+      taskIndex = 0;
+      if(done != JOptionPane.YES_OPTION)
+        COMPLETE = true;
+      else
+        taskParser = new Parser();
+    }
+  } 
 }
