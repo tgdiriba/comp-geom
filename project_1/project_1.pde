@@ -22,6 +22,15 @@ void ColorPixel(int x, int y, color c) {
   updatePixels();
 }
 
+void ColorPixel(Point p, color c) {
+  ColorPixel(p.x, p.y, c);  
+}
+
+void setPixelColor(int x, int y, color c) {
+  int pixelIndex = y*width+x;
+  pixels[pixelIndex] = c;
+}
+
 void clearScreen() {
   for(int i = 0; i < width*height; i++) {
     pixels[i] = color(255,255,255);
@@ -51,6 +60,7 @@ void FloodFill(int x, int y, color checkColor, color newColor) {
   while(!st.empty()) {
     currentPoint = (Point)st.pop();
     ColorPixel(currentPoint.x, currentPoint.y,newColor);
+    // setPixelColor(currentPoint.x, currentPoint.y, newColor);
     
     currentColor = get(currentPoint.x+1,currentPoint.y);
     if(AreColorsSame(currentColor,checkColor)) {
@@ -68,7 +78,8 @@ void FloodFill(int x, int y, color checkColor, color newColor) {
     if(AreColorsSame(currentColor,checkColor)) {
       st.push(new Point(currentPoint.x,currentPoint.y-1));
     }
-  } 
+  }
+  updatePixels(); 
 }
 
 double determinant(Point p1, Point p2, Point p3) {
@@ -94,13 +105,78 @@ Comparator<Point> yPointCompare = new Comparator<Point>() {
     if (p1.y != p2.y) {
       return p1.y - p2.y;
     } else {
-      if (p1.x != p2.x) {
-        return p2.x - p1.x;
-      } else {
-        return 1;
-      }
+      return p2.x - p1.x;
     }
   }
+};
+
+Comparator<Endpoint> endpointCompareX = new Comparator<Endpoint>() {
+  
+  int compare(Endpoint a, Endpoint b) {
+    if(a.point == b.point) {
+      // If their points are the same ones on a segment then check angle instead
+      double am = ((double)(a.getSibling().x - a.point.x))/((double)(a.getSibling().y - a.point.y));
+      double bm = ((double)(b.getSibling().x - b.point.x))/((double)(b.getSibling().y - b.point.y));
+      if(am == Double.POSITIVE_INFINITY || am == Double.NEGATIVE_INFINITY) {
+        return a.getSibling().x - b.getSibling().x;
+      }
+      else if(am == 0.0) {
+        return -1;
+      }
+      else if(bm == 0.0) {
+        return 1;
+      }
+      else {
+        if(am > 0 && bm > 0)
+          return (int)(am - bm);
+        else if(am > 0)
+          return -1;
+        else
+          return 1;
+      }
+    }
+    else {
+      return a.point.x - b.point.x;
+    }    
+  }
+  
+};
+
+Comparator<Endpoint> endpointCompareY = new Comparator<Endpoint>() {
+  
+  int compare(Endpoint a, Endpoint b) {
+    if(a.point.y != b.point.y)
+      return -1*(a.point.y - b.point.y);
+    else
+      return -1*(a.getSibling().y - b.getSibling().y);
+  }
+  
+};
+
+Comparator<Endpoint> matchingEndpointCompare = new Comparator<Endpoint>() {
+  
+  int compare(Endpoint a, Endpoint b) {
+    if(a.segment == b.segment) {
+      return 0;
+    }
+    else {
+      return a.point.x - b.point.x;
+    }
+  }
+  
+};
+
+Comparator<Endpoint> endpointSharingPoint = new Comparator<Endpoint>() {
+  
+  int compare(Endpoint a, Endpoint b) {
+    if(a.point == b.point) {
+      return 0;
+    }
+    else {
+      return a.point.y - b.point.y;
+    }
+  }
+  
 };
 
 Point IntersectionFinder(Segment seg1,Segment seg2) {
@@ -211,6 +287,37 @@ class Segment {
     this.p1 = new Point(p1.x, p1.y);
     this.p2 = new Point(p2.x, p2.y);
   }
+  
+  public int computeY(int x) {
+    if(x < p1.x && x > p2.x || x < p2.x && x > p1.x) {
+      // Make sure that x is in the right range
+      double m = slope();
+      double b = p1.y-(m*p1.x);
+      return (int)(m*x+b);
+    }
+    return -1;
+  }
+  
+  public int computeX(int y) {
+    sortPointsY();
+    if(y < p2.y && y > p1.y) {
+      // Make sure that y is in the right range
+      double m = slope(); 
+      double b = p1.y-(m*p1.x);
+      if(m == Double.POSITIVE_INFINITY || m == Double.NEGATIVE_INFINITY) {
+        // Vertical line
+        return p1.x;
+      }
+      else if(m == 0.0) {
+        // Horizontal line
+        return p1.y;  
+      }
+      else {
+        return ((int)((double)(y-b)/m));
+      }
+    }
+    return -1;
+  }
 
   public boolean equals(Object obj) {
     if (!(obj instanceof Segment)) {
@@ -266,24 +373,6 @@ class Segment {
       }
       Point I = new Point((int)px, (int)py);
       return I;
-      /*if(Math.abs(m1) > 0 && Math.abs(m1) <= 1) {
-        // Segmnet 1 is x-increasing
-        if(Math.abs(m1) > 0 && Math.abs(m2) <= 1) {
-          // Segment 2 is x-increasing
-          
-        }
-        else {
-          // Segment 2 is y-increasing
-        }
-      }
-      else {
-        if(Math.abs(m1) > 0 && Math.abs(m2) <= 1) {
-          // Segment 2 is x-increasing
-        }
-        else {
-          // Segment 2 is y-increasing
-        }
-      }*/
     }
     else {
       return null;
@@ -364,6 +453,7 @@ class Segment {
         set(p1.x, i, 0);
       }
     } else if (dy == 0) {
+      sortPointsX();
       for (int i = p1.x; i < p2.x; i++) {
         set(i, p1.y, 0);
       }
@@ -404,6 +494,79 @@ class Polygon {
     this.vertices = vlist;
     generateLineSegments(polygonColor);
     this.polygonColor = polygonColor;
+  }
+  
+  public PriorityQueue<Endpoint> generateEndpointQueue(Comparator<Endpoint> comparator) {
+    generateLineSegments();
+    PriorityQueue<Endpoint> endpointQueue = new PriorityQueue<Endpoint>(segments.size()*2,comparator);
+    for(int i = 0; i < segments.size(); i++) {
+      segments.get(i).sortPointsY();
+      println(segments.get(i));
+      Endpoint ep1 = new Endpoint(segments.get(i).p1, segments.get(i));
+      Endpoint ep2 = new Endpoint(segments.get(i).p2, segments.get(i));
+      endpointQueue.add(ep1);
+      endpointQueue.add(ep2);
+    }
+    return endpointQueue;
+  }
+  
+  public void planeSweepColor(color c) {
+    println("Starting plane sweep");
+    PriorityQueue<Endpoint> events = generateEndpointQueue(endpointCompareY);
+    BST<Endpoint> status = new BST<Endpoint>(endpointCompareX);
+    while(events.peek() != null) {
+      Endpoint endpoint = events.poll();
+      println(endpoint.startY);
+      println(endpoint.endY);
+      // Check if the current endpoint has its pair inside the tree. If not insert into the tree.
+      // If so, use that pair to see if the other segment connected to it is in the tree.
+      // If so, run colorBetweenSegmentsX
+      // Remove the points of that particular segment from the tree and continue.
+      Endpoint pair = new Endpoint(endpoint.getSibling(), endpoint.segment);
+      ArrayList<Node<Endpoint>> candidates = status.findAllNodes(pair);
+      Node<Endpoint> match = null;
+      Node<Endpoint> neighbor = null;
+      for(Node<Endpoint> ne : candidates) {
+        // Compare to see if it belongs to the same segment
+        if(ne.value.segment == endpoint.segment) {
+          match = ne;
+        }
+        else {
+          neighbor = ne;
+        }
+      }
+      
+      if(match != null && neighbor == null) {
+        neighbor = match.getLeftNeighbor();
+        if(neighbor != null) {
+          colorBetweenSegmentsX(neighbor.value.segment, match.value.segment, neighbor.value.startY, match.value.endY, c);
+          neighbor.value.startY = match.value.endY+1;
+          status.deleteNode(match);
+        }
+        else {
+          neighbor = match.getRightNeighbor();  
+          if(neighbor != null) {
+            colorBetweenSegmentsX(match.value.segment, neighbor.value.segment, neighbor.value.startY, match.value.endY, c);
+            neighbor.value.startY = match.value.endY+1;
+            status.deleteNode(match);
+          }
+        }
+      }
+      else if(match != null && neighbor != null) {
+        colorBetweenSegmentsX(match.value.segment, neighbor.value.segment, neighbor.value.startY, match.value.endY, c);
+        println(neighbor.value.startY + " " + match.value.endY);
+        println(neighbor.value);
+        println(match.value);
+        neighbor.value.startY = match.value.endY+1;
+        println("Deleting Node " + match.value);
+        status.deleteNode(match);
+      }
+      else if(match == null) {
+        println("Inserting Node " + endpoint);
+        status.insert(endpoint);  
+      }
+      
+    }
   }
   
   public Segment getClippedLineSegment(Segment seg) {
@@ -459,7 +622,7 @@ class Polygon {
   public ArrayList<Segment> generateLineSegments(color polygonColor) {
     borderColor = polygonColor;
     segments = new ArrayList<Segment>();
-    for (int i = 1; i < vertices.size(); i++) {
+    for (int i = 1; i < vertices.size (); i++) {
       segments.add(new Segment(vertices.get(i-1), vertices.get(i), polygonColor));
     }
     if (vertices.size() > 0) {
@@ -502,15 +665,6 @@ class Polygon {
       color currentColor = get(meanx, meany);
       FloodFill(meanx, meany, currentColor, polygonColor);
     }
-  }
-  
-  String toString() {
-    String conversion = "Polygon :\n";
-    for(Point p : vertices) {
-      conversion += "\t" + p + "\n";
-    }  
-    conversion += "\n";
-    return conversion;
   }
   
 }
@@ -642,9 +796,9 @@ class ConvexHull {
 }
 
 void DrawUnion(Polygon poly1, Polygon poly2, color borderColor, color fillColor) {
+  //Find the all the intersection points between the two polygons
   poly1.generateLineSegments();
   poly2.generateLineSegments();
-  //Find the all the intersection points between the two polygons
   ArrayList<Point> intersects = new ArrayList();
   for(Segment s1 : poly1.segments) {
     for(Segment s2 : poly2.segments) {
@@ -859,7 +1013,7 @@ void DrawUnion(Polygon poly1, Polygon poly2, color borderColor, color fillColor)
       count++;
     } while ( ((startPoint.x!=currentPoint.x) || (startPoint.y!=currentPoint.y)) && (count<1));
   }
-  poly1.colorPolygon(fillColor);
+  //poly1.colorPolygon(fillColor);
 }
 
 interface Task {
@@ -875,13 +1029,10 @@ class PolygonTask implements Task {
   }
 
   public void performTask() {
-    clearScreen();
+    fill(255, 255, 255);
     println("Performing Polygon Task.");
-    for(Point p : polygon.vertices) {
-      println(p);  
-    }
     polygon.drawPolygon();
-    polygon.colorPolygon(color(255, 102, 204));
+    polygon.planeSweepColor(color(255, 0, 0));
   }
 }
 
@@ -911,7 +1062,7 @@ class ConvexHullTask implements Task {
   }
 
   public void performTask() {
-    clearScreen();
+    fill(255, 255, 255);
     println("Performing Convex Hull Task.");
     H.computeConvexHull();
     H.drawHull();
@@ -948,8 +1099,8 @@ class Parser {
   public Parser() {
     tasks = new ArrayList<Task>();
     currentTask = INVALID;
-    mode = INPUT_MODE;
-    String defaultFilename = sketchPath("") + "input.txt"; 
+    mode = DEFAULT_MODE;
+    String defaultFilename = "/home/nurc-08/sketchbook/shared-repo/project_1/input.txt"; 
 
     File inputFile = null;
     Scanner fileReader = null;
@@ -1097,10 +1248,473 @@ class Parser {
   }
 }
 
+void colorBetweenSegmentsX(Segment seg1, Segment seg2, int startY, int endY, color c) {
+  // Colors between two segments horizontally
+  if(seg1.p1.x > seg2.p2.x) {
+    Segment temp = seg1;
+    seg1 = seg2;
+    seg2 = temp;  
+  }
+  //seg1.sortPointsY();
+  //seg2.sortPointsY();
+  if(startY > endY) {
+    int temp = startY;
+    startY = endY;
+    endY = temp;  
+  }
+  //int pointMinY = Math.max(seg1.p1.y, seg2.p1.y);
+  //int pointMaxY = Math.min(seg1.p2.y, seg2.p2.y);
+  //startY = Math.max(startY, pointMinY);
+  //endY = Math.min(endY, pointMaxY);
+  println("Coloring starting at " + startY + " and ending at " + endY);
+  for(int i = startY; i <= endY; i++) {
+    int s1x = seg1.computeX(i);
+    int s2x = seg2.computeX(i);
+    if(s1x != -1 && s2x != -1) {
+      for(int j = s1x; j <= s2x; j++) {
+        // ColorPixel(j, i, c);
+        setPixelColor(j, i, c);
+      }
+    }  
+  }
+  updatePixels();
+} 
+
+class Endpoint {
+  Point point;
+  Segment segment;
+  
+  int startY;
+  int endY;
+  
+  public Endpoint() {
+    point = null;
+    segment = null;  
+  }
+  
+  public Endpoint(Point point, Segment seg) {
+    this.point = point;
+    this.segment = seg;  
+    startY = Math.max(segment.p1.y, segment.p2.y);
+    endY = Math.min(segment.p1.y, segment.p2.y);
+  }
+  
+  public Point getSibling() {
+    if(point != null && segment != null) {
+      if(segment.p1 == point) {
+        return segment.p2;
+      }  
+      return segment.p1;
+    }
+    return null;
+  }
+  
+  public boolean isLowerEndpoint() {
+    if(point != null) {
+      if(point.y < getSibling().y) {
+        return true;
+      }
+      else {
+        return false;  
+      }
+    }
+    return false;
+  }
+  
+  public boolean isUpperEndpoint() {
+    if(point != null) {
+      if(point.y > getSibling().y) {
+        return true;
+      }
+      else {
+        return false;  
+      }
+    }
+    return false;
+  }
+  
+  String toString() {
+    String conversion = "Point (";
+    if(point.y < getSibling().y) {
+      conversion += "Lower";
+    }
+    else if(point.y > getSibling().y) {
+      conversion += "Upper";  
+    }
+    else {
+      if(point.x < getSibling().x) {
+        conversion += "Lower";
+      }
+      else if(point.x > getSibling().x) {
+        conversion += "Upper";
+      }
+      else {
+        conversion += "Degenerate"; 
+      }
+    }
+    conversion += "): " + point + " " + getSibling();
+    return conversion;
+  }
+  
+}
+
+class BST<T> {
+    Node<T> root;
+    Comparator<? super T> comparator;
+    private int elementCount;
+    
+    public BST() {
+      comparator = null;
+      root = null;
+    }
+    
+    public BST(Node<T> node) {
+      this.comparator = null;
+      this.root = node;  
+      elementCount = 0;
+    }
+    
+    public BST(Comparator<? super T> comparator) {
+      this.root = null;
+      this.comparator = comparator;   
+      elementCount = 0;
+    }
+    
+    public BST(Node<T> node, Comparator<? super T> comparator) {
+      if(node != null) {
+        this.root = node;
+        elementCount = 1;
+      }
+      else {
+        elementCount = 0;
+      }
+      this.comparator = comparator;
+    }
+    
+    int size() {
+      return elementCount;
+    }
+    
+    public void printBreadthFirstNodes() {
+      int levelNumber = 0;
+      for(LinkedList< Node<T> > level : getBreadthFirstNodes()) {
+        println("Iterating over level " + levelNumber);
+        for(Node<T> np : level) {
+          println(np.value);
+        }
+        levelNumber++;
+      }
+    }
+    
+    public LinkedList< LinkedList< Node<T> > > getBreadthFirstNodes() {
+      LinkedList< LinkedList< Node<T> > > sorted = new LinkedList< LinkedList< Node<T> > >();
+      sorted.add(new LinkedList< Node<T> >());
+      Node<T> element = root;
+      if(root != null)
+        sorted.getFirst().addFirst(element);
+      println(sorted.size());
+      
+      boolean complete = false;
+      LinkedList< Node<T> > currentQueue = new LinkedList< Node<T> >();
+      while(!complete) {    
+        for(Node<T> e: sorted.getLast()) {
+          if(e.left != null) {
+            currentQueue.addFirst(e.left);
+          }
+          if(e.right != null) {
+            currentQueue.addFirst(e.right);
+          }
+        }
+        
+        if(currentQueue.size() == 0) {
+          complete = true;
+        }
+        else {
+          sorted.addLast(currentQueue);
+          currentQueue = new LinkedList< Node<T> >();
+        }
+      }  
+      return sorted;
+    }
+    
+    int nodeCompare(Node<T> node1, Node<T> node2) {
+      if(comparator == null)
+        return 0;
+      else
+        return (int)Math.signum(comparator.compare(node1.value, node2.value));
+    }
+    
+    Node<T> insert(T nv) {
+      return insert(new Node<T>(nv));  
+    }
+    
+    Node<T> insert(Node<T> n) {
+      if(root != null) {
+        boolean complete = false;
+        Node<T> parent = root;
+        while(!complete) {
+          if(nodeCompare(n, parent) <= 0) {
+            if(parent.left == null) {
+              parent.left = n;
+              n.parent = parent;
+              elementCount++;
+              complete = true;       
+            }   
+            else {
+              parent = parent.left;  
+            }
+          } 
+          else {
+            if(parent.right == null) {
+              parent.right = n;  
+              n.parent = parent;
+              elementCount++;
+              complete = true;
+            }
+            else {
+              parent = parent.right;  
+            }
+          }
+        }
+      }
+      else {
+        root = n;
+        n.parent = null;
+        elementCount++;
+      }
+      return n;
+    }
+    
+    public void deleteNode(Node<T> r) {
+      elementCount--;
+      if(r.left != null && r.right != null) {
+          Node<T> substitute = r.getRightNeighbor();
+          substitute.parent.right = null;
+          substitute.parent = r.parent;
+          substitute.left = r.left;
+          if(r.isLeftChild()) {
+             r.parent.left = substitute;
+          } 
+          else if(r.isRightChild()) {
+            r.parent.right = substitute;
+          }
+          else {
+            // Must be root
+            root = substitute;
+          }
+        }
+        else if(r.left != null || r.right != null) {
+          if(r.isLeftChild()) {
+            if(r.left != null) {
+              r.parent.left = r.left;
+              r.left.parent = r.parent;
+            }
+            else {
+              r.parent.left = r.right;
+              r.right.parent = r.parent;
+            }
+          } 
+          else if(r.isRightChild()) {
+            if(r.left != null) {
+              if(r.parent != null)
+                r.parent.right = r.left;
+              else
+                root = r.left;
+              r.left.parent = r.parent;
+            }
+            else {
+              if(r.parent != null)
+                r.parent.left = r.right;
+              else
+                root = r.right;  
+              r.right.parent = r.parent;
+            } 
+          } 
+        }
+        else {
+          if(r.parent != null) {
+            if(r.isLeftChild())
+              r.parent.left = null;
+            else
+              r.parent.right = null;
+          }
+          else {
+            root = null;  
+          }
+       }
+    }
+    
+    public int removeAllNodes(T V) {
+      return removeAllNodes(V, comparator);  
+    }
+    
+    public int removeAllNodes(T V, Comparator<? super T> C) {
+      // BST node removal
+      //ArrayList<Node<T>> nodes = findAllNodes(V, C);
+      int count = 0;
+      Node<T> node = findNode(V, C);
+      while(node != null) {
+        println(node.value);
+        deleteNode(node);
+        node = findNode(V, C);
+        count++;
+      } 
+      return count;
+    }
+    
+    public ArrayList< Node<T> > findAllNodes(T V) {
+      return findAllNodes(V, comparator);  
+    }
+    
+    public ArrayList< Node<T> > findAllNodes(T V, Comparator<? super T> C) {
+      ArrayList<Node<T>> nodes = new ArrayList<Node<T>>();
+      if(root != null) {
+        Node<T> parent = root;
+        while(true) {
+          if(parent == null) {
+            return nodes;
+          }
+          else {
+            println(parent.value);
+            if(C.compare(V, parent.value) < 0) {
+              parent = parent.left;   
+            }
+            else if(C.compare(V, parent.value) > 0) {
+              parent = parent.right;
+            }
+            else {
+              nodes.add(parent);
+              parent = parent.left;
+            }
+          }
+        }
+      }
+      else {
+        return nodes;
+      }  
+    }
+    
+    public Node<T> findNode(T V) {
+      return findNode(V, comparator);  
+    }
+      
+    public Node<T> findNode(T V, Comparator<? super T> C) {
+      if(root != null) {
+        Node<T> parent = root;
+        while(true) {
+          if(parent == null) {
+            return null;
+          }
+          else {
+            if(C.compare(V, parent.value) < 0) {
+              parent = parent.left;   
+            }
+            else if(C.compare(V, parent.value) > 0) {
+              parent = parent.right;
+            }
+            else {
+              return parent;
+            }
+          }
+        }
+      }
+      else {
+        return null;
+      }  
+    }
+    
+}
+
+class Node<T> {
+  Node<T> left;
+  Node<T> right;
+  Node<T> parent;
+  T value;
+  
+  public Node() {
+    left = right = parent = null;
+  }
+  
+  public Node(T v) {
+    this();
+    this.value = v; 
+  }
+  
+  boolean isLeftChild() {
+    if(parent != null) {
+      if(this == parent.left) {
+        return true;
+      }
+    }  
+    return false;
+  }
+  
+  boolean isRightChild() {
+    if(parent != null) {
+      if(this == parent.right) {
+        return true; 
+      } 
+    }  
+    return false;
+  }
+  
+  Node<T> getLeftNeighbor() {
+    Node<T> leftNeighbor = null;
+    if(left != null) {
+      leftNeighbor = left;
+      while(leftNeighbor.right != null) {
+        leftNeighbor = leftNeighbor.right;
+      }
+    }
+    else if(parent != null) {
+      if(isRightChild()) {
+        leftNeighbor = parent;  
+      }
+      else {
+        leftNeighbor = parent;
+        while(leftNeighbor != null && !leftNeighbor.isRightChild())
+          leftNeighbor = leftNeighbor.parent;
+        if(leftNeighbor != null)
+          leftNeighbor = leftNeighbor.parent;
+      }
+      leftNeighbor = parent;
+    }
+    return leftNeighbor;
+  }
+  
+  Node<T> getRightNeighbor() {
+    Node<T> rightNeighbor = null;
+    if(right != null) {
+      rightNeighbor = right;
+      while(rightNeighbor.left != null)
+        rightNeighbor = rightNeighbor.left;
+    }
+    else if(parent != null) {
+      if(parent.isLeftChild()) {
+        rightNeighbor = parent.parent;
+      }
+      else {
+        rightNeighbor = parent;
+        while(rightNeighbor != null && !rightNeighbor.isLeftChild())
+          rightNeighbor = rightNeighbor.parent;
+        if(rightNeighbor != null && !rightNeighbor.isLeftChild())
+          rightNeighbor = null;
+      }
+    }
+    return rightNeighbor;
+  }
+  
+}
+
+Point generatePointY(int y) {
+  return new Point(1, y);  
+}
+
 void setup() {
   size(600, 600);
   loadPixels();
   clearScreen();
+  
   taskParser = new Parser();
 }
 
@@ -1135,5 +1749,5 @@ void draw() {
       taskParser.tasks.get(taskIndex).performTask();
       taskIndex++;  
     }
-  } 
+  }
 }
